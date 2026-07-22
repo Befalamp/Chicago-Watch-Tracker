@@ -1,0 +1,19 @@
+name: Keep Supabase awake
+
+on:
+  schedule:
+    # Runs every 3 days — well inside Supabase's 7-day inactivity window
+    - cron: '0 9 */3 * *'
+  workflow_dispatch: {}   # lets you trigger it manually from the Actions tab too
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Insert keep-alive row
+        run: |
+          curl -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/keepalive" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{}'
