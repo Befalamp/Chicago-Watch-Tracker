@@ -4,103 +4,218 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>One Chicago Watch Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --accent: #b3272c;
-    --bg: #101317;
-    --card: #1b1f26;
-    --text: #eef0f3;
-    --muted: #8b93a1;
+    --bg: #0b1220;
+    --card: #121a2c;
+    --card-hover: #16203a;
+    --stripe-blue: #41b6e6;
+    --flag-red: #c8102e;
+    --text: #eef2f7;
+    --muted: #7c8aa0;
+    --hairline: #24304a;
   }
   * { box-sizing: border-box; }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
   body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: 'Inter', -apple-system, sans-serif;
     background: var(--bg);
     color: var(--text);
-    padding-bottom: 60px;
+    padding-bottom: 70px;
   }
+
   header {
     position: sticky;
     top: 0;
     background: var(--bg);
-    padding: 16px 16px 12px;
-    border-bottom: 1px solid #2a2f38;
+    padding: 20px 18px 14px;
     z-index: 10;
   }
-  h1 { font-size: 18px; margin: 0 0 8px; }
-  .progress-wrap {
-    background: #2a2f38;
-    border-radius: 8px;
-    height: 10px;
-    overflow: hidden;
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: var(--stripe-blue);
+    text-transform: uppercase;
+    margin-bottom: 2px;
   }
-  .progress-bar {
-    background: var(--accent);
-    height: 100%;
+  h1 {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: 26px;
+    letter-spacing: 0.01em;
+    margin: 0 0 12px;
+    text-transform: uppercase;
+  }
+
+  .flag-progress {
+    height: 14px;
+    border-radius: 3px;
+    overflow: hidden;
+    background: var(--hairline);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .flag-progress::before, .flag-progress::after {
+    content: '';
+    height: 2px;
+    background: var(--stripe-blue);
+    opacity: 0.55;
+  }
+  .flag-fill {
+    position: absolute;
+    inset: 0;
     width: 0%;
-    transition: width 0.3s ease;
+    background: linear-gradient(90deg, var(--flag-red), #e8394f);
+    transition: width 0.4s ease;
   }
   .progress-label {
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 12px;
     color: var(--muted);
-    margin-top: 6px;
+    margin-top: 8px;
+    display: flex;
+    justify-content: space-between;
   }
-  #status {
-    font-size: 12px;
-    color: var(--muted);
-    margin-top: 4px;
-  }
-  .group-header {
-    padding: 14px 16px 4px;
+  #status { font-size: 12px; color: var(--stripe-blue); margin-top: 6px; min-height: 16px; }
+  #error-banner {
+    display: none;
+    background: rgba(200, 16, 46, 0.12);
+    border: 1px solid var(--flag-red);
+    color: #ffb3bd;
     font-size: 13px;
-    font-weight: 600;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-top: 10px;
   }
+
+  .group-header {
+    margin: 22px 14px 8px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--hairline);
+    position: relative;
+  }
+  .group-header::after {
+    content: '';
+    position: absolute;
+    left: 0; bottom: -2px;
+    width: 46px;
+    height: 2px;
+    background: var(--stripe-blue);
+  }
+  .group-title {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+  .group-count {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
   .row {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 12px;
-    padding: 10px 16px;
+    padding: 12px 14px;
     background: var(--card);
     margin: 0 12px 6px;
     border-radius: 10px;
+    border: 1px solid transparent;
   }
-  .row.watched { opacity: 0.55; }
-  .row.watched .ep-title { text-decoration: line-through; }
-  input[type="checkbox"] {
-    width: 22px;
-    height: 22px;
+  .row.watched {
+    border-color: var(--hairline);
+    opacity: 0.6;
+  }
+  .row.watched .ep-title { text-decoration: line-through; text-decoration-color: var(--muted); }
+
+  .star-btn {
     flex-shrink: 0;
-    accent-color: var(--accent);
+    width: 30px;
+    height: 30px;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
   }
+  .star-btn svg { width: 26px; height: 26px; transition: transform 0.2s ease; }
+  .star-btn polygon {
+    fill: none;
+    stroke: var(--muted);
+    stroke-width: 1.5;
+    transition: fill 0.2s ease, stroke 0.2s ease;
+  }
+  .row.watched .star-btn polygon { fill: var(--flag-red); stroke: var(--flag-red); }
+  .star-btn:active svg { transform: scale(0.85); }
+
   .ep-main { flex: 1; min-width: 0; }
-  .ep-title { font-size: 14px; }
-  .ep-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
-  .who { font-size: 11px; color: var(--muted); text-align: right; min-width: 50px; }
+  .ep-code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--stripe-blue);
+    letter-spacing: 0.03em;
+  }
+  .ep-title { font-size: 14.5px; font-weight: 500; margin-top: 1px; }
+  .ep-sub { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+
+  .who-pill {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    padding: 3px 7px;
+    border-radius: 20px;
+    white-space: nowrap;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
   .refresh-btn {
     position: fixed;
-    bottom: 16px;
-    right: 16px;
-    background: var(--accent);
+    bottom: 18px;
+    right: 18px;
+    background: var(--flag-red);
     color: white;
     border: none;
     border-radius: 24px;
-    padding: 10px 18px;
+    padding: 11px 20px;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
     font-size: 13px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    box-shadow: 0 6px 16px rgba(200, 16, 46, 0.35);
+  }
+  .refresh-btn:focus-visible, .star-btn:focus-visible {
+    outline: 2px solid var(--stripe-blue);
+    outline-offset: 2px;
   }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>One Chicago Watch Tracker</h1>
-  <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
-  <div class="progress-label" id="progressLabel">Loading…</div>
+  <div class="eyebrow">One Chicago &middot; Crossover Order</div>
+  <h1>Watch Tracker</h1>
+  <div class="flag-progress"><div class="flag-fill" id="progressFill"></div></div>
+  <div class="progress-label">
+    <span id="progressLabel">Loading…</span>
+    <span id="progressPct"></span>
+  </div>
   <div id="status"></div>
+  <div id="error-banner"></div>
 </header>
 
 <div id="list"></div>
@@ -108,15 +223,21 @@
 
 <script>
 // ── CONFIGURE THESE TWO LINES ──────────────────────────────
-const SUPABASE_URL = "https://hmtbxpygrgztkzxlbler.supabase.co"; // e.g. https://abcxyz.supabase.co
+const SUPABASE_URL = "https://hmtbxpygrgztkzxlbler.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_IxRyQstSu02FBpSBChc_1g_tF5jEhbl";
 // ────────────────────────────────────────────────────────────
 
-// Ask the tracker to identify who ticked something — simple prompt, stored locally per device
 let WHO = localStorage.getItem('chicago_who');
 if (!WHO) {
   WHO = prompt("What's your name? (so we know who ticked what)") || "Someone";
   localStorage.setItem('chicago_who', WHO);
+}
+
+function colourFor(name) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue}, 55%, 55%)`;
 }
 
 const headers = {
@@ -126,47 +247,86 @@ const headers = {
   Prefer: "return=representation"
 };
 
+function showError(msg) {
+  const banner = document.getElementById('error-banner');
+  banner.textContent = msg;
+  banner.style.display = 'block';
+}
+function clearError() {
+  document.getElementById('error-banner').style.display = 'none';
+}
+
 async function loadEpisodes() {
   document.getElementById('status').textContent = 'Refreshing…';
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/episodes?select=*&order=order_index.asc`, { headers });
-  const data = await res.json();
-  render(data);
+  clearError();
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/episodes?select=*&order=order_index.asc`, { headers });
+    const data = await res.json();
+    if (!res.ok || !Array.isArray(data)) {
+      showError((data && data.message) || "Couldn't reach the tracker's database. Check the Supabase URL and key in this file.");
+      document.getElementById('status').textContent = '';
+      return;
+    }
+    render(data);
+  } catch (e) {
+    showError("Couldn't connect at all — check your internet connection and try Refresh again.");
+  }
   document.getElementById('status').textContent = '';
+}
+
+function starSVG() {
+  return `<svg viewBox="0 0 24 24"><polygon points="12,1 15,8.5 23,9 17,14.5 19,22.5 12,18 5,22.5 7,14.5 1,9 9,8.5"/></svg>`;
 }
 
 function render(data) {
   const list = document.getElementById('list');
   list.innerHTML = '';
   let lastGroup = null;
+  let groupEl = null;
   const total = data.length;
   const watchedCount = data.filter(e => e.watched).length;
 
-  document.getElementById('progressBar').style.width = total ? `${(watchedCount/total)*100}%` : '0%';
+  document.getElementById('progressFill').style.width = total ? `${(watchedCount/total)*100}%` : '0%';
   document.getElementById('progressLabel').textContent = `${watchedCount} / ${total} watched`;
+  document.getElementById('progressPct').textContent = total ? `${Math.round((watchedCount/total)*100)}%` : '';
 
   data.forEach(ep => {
     const groupKey = `${ep.show} — ${ep.season}`;
     if (groupKey !== lastGroup) {
       const gh = document.createElement('div');
       gh.className = 'group-header';
-      gh.textContent = groupKey;
+      gh.innerHTML = `<span class="group-title">${ep.show} · ${ep.season}</span>`;
       list.appendChild(gh);
       lastGroup = groupKey;
+      groupEl = { header: gh, total: 0, watched: 0 };
     }
+    groupEl.total++;
+    if (ep.watched) groupEl.watched++;
+    const countSpan = document.createElement('span');
+    countSpan.className = 'group-count';
+    countSpan.style.float = 'right';
+    countSpan.textContent = `${groupEl.watched}/${groupEl.total}`;
+    groupEl.header.querySelectorAll('.group-count').forEach(n => n.remove());
+    groupEl.header.appendChild(countSpan);
 
     const row = document.createElement('div');
     row.className = 'row' + (ep.watched ? ' watched' : '');
 
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.checked = !!ep.watched;
-    cb.onchange = () => toggle(ep, cb.checked, row);
+    const btn = document.createElement('button');
+    btn.className = 'star-btn';
+    btn.setAttribute('aria-label', ep.watched ? 'Mark as not watched' : 'Mark as watched');
+    btn.innerHTML = starSVG();
+    btn.onclick = () => toggle(ep, !ep.watched, row);
 
     const main = document.createElement('div');
     main.className = 'ep-main';
+    const code = document.createElement('div');
+    code.className = 'ep-code';
+    code.textContent = ep.episode || '';
     const t = document.createElement('div');
     t.className = 'ep-title';
-    t.textContent = ep.episode + (ep.title ? ` — ${ep.title}` : '');
+    t.textContent = ep.title || '(untitled)';
+    main.appendChild(code);
     main.appendChild(t);
     if (ep.notes) {
       const sub = document.createElement('div');
@@ -175,29 +335,39 @@ function render(data) {
       main.appendChild(sub);
     }
 
-    const who = document.createElement('div');
-    who.className = 'who';
-    who.textContent = ep.watched ? (ep.watched_by || '') : '';
-
-    row.appendChild(cb);
+    row.appendChild(btn);
     row.appendChild(main);
-    row.appendChild(who);
+
+    if (ep.watched && ep.watched_by) {
+      const who = document.createElement('div');
+      who.className = 'who-pill';
+      who.textContent = ep.watched_by;
+      who.style.background = colourFor(ep.watched_by) + '33';
+      who.style.color = colourFor(ep.watched_by);
+      row.appendChild(who);
+    }
+
     list.appendChild(row);
   });
 }
 
 async function toggle(ep, checked, rowEl) {
+  ep.watched = checked;
   rowEl.classList.toggle('watched', checked);
   const patch = {
     watched: checked,
     watched_by: checked ? WHO : null,
     watched_at: checked ? new Date().toISOString() : null
   };
-  await fetch(`${SUPABASE_URL}/rest/v1/episodes?id=eq.${ep.id}`, {
-    method: 'PATCH',
-    headers,
-    body: JSON.stringify(patch)
-  });
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/episodes?id=eq.${ep.id}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify(patch)
+    });
+  } catch (e) {
+    showError("Couldn't save that tick — check your connection and try again.");
+  }
   loadEpisodes();
 }
 
