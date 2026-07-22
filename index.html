@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>One Chicago Watch Tracker</title>
+<style>
+  :root {
+    --accent: #b3272c;
+    --bg: #101317;
+    --card: #1b1f26;
+    --text: #eef0f3;
+    --muted: #8b93a1;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding-bottom: 60px;
+  }
+  header {
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid #2a2f38;
+    z-index: 10;
+  }
+  h1 { font-size: 18px; margin: 0 0 8px; }
+  .progress-wrap {
+    background: #2a2f38;
+    border-radius: 8px;
+    height: 10px;
+    overflow: hidden;
+  }
+  .progress-bar {
+    background: var(--accent);
+    height: 100%;
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+  .progress-label {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  #status {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .group-header {
+    padding: 14px 16px 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: var(--card);
+    margin: 0 12px 6px;
+    border-radius: 10px;
+  }
+  .row.watched { opacity: 0.55; }
+  .row.watched .ep-title { text-decoration: line-through; }
+  input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    accent-color: var(--accent);
+  }
+  .ep-main { flex: 1; min-width: 0; }
+  .ep-title { font-size: 14px; }
+  .ep-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .who { font-size: 11px; color: var(--muted); text-align: right; min-width: 50px; }
+  .refresh-btn {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 24px;
+    padding: 10px 18px;
+    font-size: 13px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>One Chicago Watch Tracker</h1>
+  <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+  <div class="progress-label" id="progressLabel">Loading…</div>
+  <div id="status"></div>
+</header>
+
+<div id="list"></div>
+<button class="refresh-btn" onclick="loadEpisodes()">Refresh</button>
+
+<script>
+// ── CONFIGURE THESE TWO LINES ──────────────────────────────
+const SUPABASE_URL = "https://hmtbxpygrgztkzxlbler.supabase.co/rest/v1/"; // e.g. https://abcxyz.supabase.co
+const SUPABASE_ANON_KEY = "sb_publishable_IxRyQstSu02FBpSBChc_1g_tF5jEhbl";
+// ────────────────────────────────────────────────────────────
+
+// Ask the tracker to identify who ticked something — simple prompt, stored locally per device
+let WHO = localStorage.getItem('chicago_who');
+if (!WHO) {
+  WHO = prompt("What's your name? (so we know who ticked what)") || "Someone";
+  localStorage.setItem('chicago_who', WHO);
+}
+
+const headers = {
+  apikey: SUPABASE_ANON_KEY,
+  Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+  "Content-Type": "application/json",
+  Prefer: "return=representation"
+};
+
+async function loadEpisodes() {
+  document.getElementById('status').textContent = 'Refreshing…';
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/episodes?select=*&order=order_index.asc`, { headers });
+  const data = await res.json();
+  render(data);
+  document.getElementById('status').textContent = '';
+}
+
+function render(data) {
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+  let lastGroup = null;
+  const total = data.length;
+  const watchedCount = data.filter(e => e.watched).length;
+
+  document.getElementById('progressBar').style.width = total ? `${(watchedCount/total)*100}%` : '0%';
+  document.getElementById('progressLabel').textContent = `${watchedCount} / ${total} watched`;
+
+  data.forEach(ep => {
+    const groupKey = `${ep.show} — ${ep.season}`;
+    if (groupKey !== lastGroup) {
+      const gh = document.createElement('div');
+      gh.className = 'group-header';
+      gh.textContent = groupKey;
+      list.appendChild(gh);
+      lastGroup = groupKey;
+    }
+
+    const row = document.createElement('div');
+    row.className = 'row' + (ep.watched ? ' watched' : '');
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = !!ep.watched;
+    cb.onchange = () => toggle(ep, cb.checked, row);
+
+    const main = document.createElement('div');
+    main.className = 'ep-main';
+    const t = document.createElement('div');
+    t.className = 'ep-title';
+    t.textContent = ep.episode + (ep.title ? ` — ${ep.title}` : '');
+    main.appendChild(t);
+    if (ep.notes) {
+      const sub = document.createElement('div');
+      sub.className = 'ep-sub';
+      sub.textContent = ep.notes;
+      main.appendChild(sub);
+    }
+
+    const who = document.createElement('div');
+    who.className = 'who';
+    who.textContent = ep.watched ? (ep.watched_by || '') : '';
+
+    row.appendChild(cb);
+    row.appendChild(main);
+    row.appendChild(who);
+    list.appendChild(row);
+  });
+}
+
+async function toggle(ep, checked, rowEl) {
+  rowEl.classList.toggle('watched', checked);
+  const patch = {
+    watched: checked,
+    watched_by: checked ? WHO : null,
+    watched_at: checked ? new Date().toISOString() : null
+  };
+  await fetch(`${SUPABASE_URL}/rest/v1/episodes?id=eq.${ep.id}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(patch)
+  });
+  loadEpisodes();
+}
+
+loadEpisodes();
+</script>
+</body>
+</html>
