@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>One Chicago Watch Tracker</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b1220">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
@@ -121,6 +125,19 @@
     font-family: 'IBM Plex Mono', monospace;
     font-size: 11px;
     color: var(--muted);
+  }
+  .group-progress {
+    height: 5px;
+    border-radius: 3px;
+    background: var(--hairline);
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .group-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--flag-red);
+    transition: width 0.4s ease;
   }
 
   .row {
@@ -281,8 +298,6 @@ function starSVG() {
 function render(data) {
   const list = document.getElementById('list');
   list.innerHTML = '';
-  let lastGroup = null;
-  let groupEl = null;
   const total = data.length;
   const watchedCount = data.filter(e => e.watched).length;
 
@@ -290,25 +305,32 @@ function render(data) {
   document.getElementById('progressLabel').textContent = `${watchedCount} / ${total} watched`;
   document.getElementById('progressPct').textContent = total ? `${Math.round((watchedCount/total)*100)}%` : '';
 
+  // pre-group so each header knows its own total up front, not just running count
+  const groups = [];
+  const groupIndex = {};
   data.forEach(ep => {
     const groupKey = `${ep.show} — ${ep.season}`;
-    if (groupKey !== lastGroup) {
-      const gh = document.createElement('div');
-      gh.className = 'group-header';
-      gh.innerHTML = `<span class="group-title">${ep.show} · ${ep.season}</span>`;
-      list.appendChild(gh);
-      lastGroup = groupKey;
-      groupEl = { header: gh, total: 0, watched: 0 };
+    if (!(groupKey in groupIndex)) {
+      groupIndex[groupKey] = groups.length;
+      groups.push({ show: ep.show, season: ep.season, episodes: [] });
     }
-    groupEl.total++;
-    if (ep.watched) groupEl.watched++;
-    const countSpan = document.createElement('span');
-    countSpan.className = 'group-count';
-    countSpan.style.float = 'right';
-    countSpan.textContent = `${groupEl.watched}/${groupEl.total}`;
-    groupEl.header.querySelectorAll('.group-count').forEach(n => n.remove());
-    groupEl.header.appendChild(countSpan);
+    groups[groupIndex[groupKey]].episodes.push(ep);
+  });
 
+  groups.forEach(group => {
+    const groupTotal = group.episodes.length;
+    const groupWatched = group.episodes.filter(e => e.watched).length;
+
+    const gh = document.createElement('div');
+    gh.className = 'group-header';
+    gh.innerHTML = `
+      <span class="group-title">${group.show} · ${group.season}</span>
+      <span class="group-count" style="float:right">${groupWatched}/${groupTotal}</span>
+      <div class="group-progress"><div class="group-progress-fill" style="width:${groupTotal ? (groupWatched/groupTotal)*100 : 0}%"></div></div>
+    `;
+    list.appendChild(gh);
+
+    group.episodes.forEach(ep => {
     const row = document.createElement('div');
     row.className = 'row' + (ep.watched ? ' watched' : '');
 
@@ -348,6 +370,7 @@ function render(data) {
     }
 
     list.appendChild(row);
+    });
   });
 }
 
@@ -372,6 +395,12 @@ async function toggle(ep, checked, rowEl) {
 }
 
 loadEpisodes();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
 </script>
 </body>
 </html>
