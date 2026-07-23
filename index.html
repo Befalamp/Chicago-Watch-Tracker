@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -233,6 +233,7 @@
   </div>
   <div id="status"></div>
   <div id="error-banner"></div>
+  <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); margin-top:10px;">build v3 — order fix</div>
 </header>
 
 <div id="list"></div>
@@ -305,16 +306,17 @@ function render(data) {
   document.getElementById('progressLabel').textContent = `${watchedCount} / ${total} watched`;
   document.getElementById('progressPct').textContent = total ? `${Math.round((watchedCount/total)*100)}%` : '';
 
-  // pre-group so each header knows its own total up front, not just running count
+  // group into CONTIGUOUS runs only — a show/season can legitimately
+  // reappear later after other shows interleave, and each occurrence
+  // must stay in its real chronological position, not get merged.
   const groups = [];
-  const groupIndex = {};
   data.forEach(ep => {
     const groupKey = `${ep.show} — ${ep.season}`;
-    if (!(groupKey in groupIndex)) {
-      groupIndex[groupKey] = groups.length;
-      groups.push({ show: ep.show, season: ep.season, episodes: [] });
+    const last = groups[groups.length - 1];
+    if (!last || last.key !== groupKey) {
+      groups.push({ key: groupKey, show: ep.show, season: ep.season, episodes: [] });
     }
-    groups[groupIndex[groupKey]].episodes.push(ep);
+    groups[groups.length - 1].episodes.push(ep);
   });
 
   groups.forEach(group => {
@@ -403,4 +405,4 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 </body>
-</html>
+</html>   
